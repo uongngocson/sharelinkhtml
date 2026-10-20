@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Share Hub - Public & Share Wireframe LAN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbars and sleek glass effects */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.5); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.8); }
+
+    .dropzone-active {
+      border-color: #6366f1 !important;
+      background-color: rgba(99, 102, 241, 0.08) !important;
+      transform: scale(1.008);
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.25);
+    }
+    .pulse-glow {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulse-ring 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulse-ring {
+      to { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white">
+
+  <!-- Background Glow Accents -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/15 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/3 -right-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    
+    <!-- Top Header Bar -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-8 border-b border-slate-800/80">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/25">
+          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-2xl font-bold tracking-tight text-white">HTML Share Hub</h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-glow"></span>
+              Live LAN
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Kéo thả file HTML & chia sẻ ngay tức thì cho mọi người cùng mạng IP</p>
+        </div>
+      </div>
+
+      <!-- LAN Connection Badge Card -->
+      <div class="flex items-center gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 px-4 backdrop-blur shadow-sm">
+        <div class="flex flex-col">
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Địa chỉ mạng LAN</span>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span id="displayLanIp" class="text-sm font-mono font-semibold text-indigo-400">Đang tải...</span>
+            <span class="text-xs text-slate-500">•</span>
+            <span id="displayHostname" class="text-xs text-slate-400 font-mono">...</span>
+          </div>
+        </div>
+        <button id="btnCopyHubLink" onclick="copyHubUrl()" title="Sao chép link trang chủ này" class="p-2 ml-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 text-xs font-medium">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+          Chép link Hub
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="mt-8 space-y-8">
+      
+      <!-- Drag & Drop Upload Zone -->
+      <section>
+        <div id="dropzone" class="relative group cursor-pointer border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-900/60 hover:bg-slate-900/90 rounded-3xl p-8 md:p-12 text-center transition-all duration-200 backdrop-blur">
+          <input type="file" id="fileInput" accept=".html,.htm" multiple class="hidden">
+          
+          <div class="flex flex-col items-center justify-center pointer-events-none">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-brand-400 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white transition duration-200 shadow-md">
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-1.5">
+              Kéo & thả file <span class="text-brand-400 font-mono">.html</span> vào đây
+            </h2>
+            <p class="text-sm text-slate-400 max-w-md mb-4">
+              Hệ thống sẽ tự động lưu và cấp URL trực tiếp cho đồng nghiệp trong cùng mạng nội bộ truy cập
+            </p>
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-600/30 transition pointer-events-auto" onclick="document.getElementById('fileInput').click()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Hoặc bấm để chọn file từ máy
+            </div>
+          </div>
+
+          <!-- Uploading Overlay Spinner -->
+          <div id="uploadProgress" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center gap-3">
+            <div class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            <p id="uploadStatusText" class="text-sm font-semibold text-slate-200">Đang tải lên file...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Hosted Files Explorer -->
+      <section class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Danh Sách File Đã Public</span>
+              <span id="fileCountBadge" class="px-2 py-0.5 rounded-full text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">0 file</span>
+            </h2>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <!-- Search bar -->
+            <div class="relative">
+              <input type="text" id="searchInput" placeholder="Tìm kiếm file..." class="w-48 sm:w-64 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition">
+              <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            
+            <!-- Refresh Button -->
+            <button onclick="loadFiles()" title="Làm mới danh sách" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Files List Grid -->
+        <div id="fileListContainer" class="grid grid-cols-1 gap-3.5">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16 px-4 bg-slate-900/40 rounded-2xl border border-slate-800/80">
+          <div class="w-12 h-12 mx-auto rounded-xl bg-slate-800/60 flex items-center justify-center text-slate-500 mb-3">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold text-slate-300">Chưa có file nào được public</h3>
+          <p class="text-xs text-slate-500 mt-1">Kéo thả file HTML vào khung bên trên để chia sẻ link cho đồng nghiệp</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl relative">
+      <button onclick="closeQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+      <h3 class="text-base font-bold text-white mb-1">Quét mã QR để xem</h3>
+      <p id="qrFileName" class="text-xs text-slate-400 truncate mb-4 px-2"></p>
+
+      <div class="bg-white p-4 rounded-2xl mx-auto w-52 h-52 flex items-center justify-center shadow-inner">
+        <div id="qrcodeWrapper"></div>
+      </div>
+
+      <div class="mt-4 p-2 bg-slate-950/60 rounded-xl border border-slate-800/80 text-[11px] font-mono text-slate-300 break-all" id="qrLinkText">
+      </div>
+
+      <button onclick="copyCurrentQrUrl()" class="mt-3 w-full py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+        Sao chép link này
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick Preview Modal -->
+  <div id="previewModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex flex-col p-4 md:p-8">
+    <div class="flex items-center justify-between pb-3 text-white border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <h3 id="previewTitle" class="text-sm font-bold truncate max-w-md">Xem trước</h3>
+        <span class="text-xs text-slate-500">•</span>
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+          <button onclick="setPreviewSize('100%')" class="px-2 py-0.5 rounded text-slate-300 hover:text-white hover:bg-slate-800">Desktop</button>
+          <button onclick="setPreviewSize('768px')" class="px-2 py-0.5 rounded text-slate-300 hover:text-white hover:bg-slate-800">Tablet</button>
+          <button onclick="setPreviewSize('390px')" class="px-2 py-0.5 rounded text-slate-300 hover:text-white hover:bg-slate-800">Mobile</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a id="previewOpenNewTab" href="#" target="_blank" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1 transition">
+          Mở tab đầy đủ ↗
+        </a>
+        <button onclick="closePreviewModal()" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 mt-3 flex items-center justify-center overflow-hidden">
+      <iframe id="previewIframe" src="" class="w-full h-full bg-white rounded-2xl shadow-2xl border border-slate-800 transition-all duration-300"></iframe>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Minimal Offline QR Code Generator script -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    let serverInfo = { primaryIp: window.location.hostname, port: window.location.port || '3000' };
+    let currentFiles = [];
+    let currentQrUrl = '';
+
+    // Toast Notification helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const isSuccess = type === 'success';
+      toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold backdrop-blur transform transition-all duration-300 translate-y-4 opacity-0 ${
+        isSuccess 
+          ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-800/80 shadow-emerald-950/50' 
+          : 'bg-red-950/90 text-red-300 border border-red-800/80 shadow-red-950/50'
+      }`;
+      toast.innerHTML = `
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          ${isSuccess 
+            ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' 
+            : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+        </svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Copy to clipboard helper
+    async function copyToClipboard(text, successMsg = 'Đã sao chép link!') {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(successMsg, 'success');
+      } catch (err) {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast(successMsg, 'success');
+      }
+    }
+
+    // Get Base LAN URL
+    function getLanBaseUrl() {
+      const ip = serverInfo.primaryIp || window.location.hostname;
+      const port = serverInfo.port || window.location.port || '3000';
+      return `http://${ip}:${port}`;
+    }
+
+    function copyHubUrl() {
+      copyToClipboard(getLanBaseUrl(), 'Đã sao chép link Hub trang chủ!');
+    }
+
+    // Load Server Information
+    async function loadServerInfo() {
+      try {
+        const res = await fetch('/api/info');
+        if (res.ok) {
+          serverInfo = await res.json();
+          const lanUrl = `http://${serverInfo.primaryIp}:${serverInfo.port}`;
+          document.getElementById('displayLanIp').textContent = `${serverInfo.primaryIp}:${serverInfo.port}`;
+          document.getElementById('displayHostname').textContent = serverInfo.hostname || 'Local Machine';
+        }
+      } catch (e) {
+        console.warn('Failed to load server info', e);
+      }
+    }
+
+    // Render Files List
+    function renderFiles(files) {
+      const container = document.getElementById('fileListContainer');
+      const emptyState = document.getElementById('emptyState');
+      const badge = document.getElementById('fileCountBadge');
+
+      badge.textContent = `${files.length} file`;
+
+      if (files.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      const lanBase = getLanBaseUrl();
+
+      container.innerHTML = files.map(file => {
+        const fullLanUrl = `${lanBase}/view/${encodeURIComponent(file.name)}`;
+        const dateStr = new Date(file.mtime).toLocaleString('vi-VN', {
+          month: 'numeric',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        return `
+          <div class="group bg-slate-900/75 hover:bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-2xl p-4 transition-all duration-150 backdrop-blur shadow-sm hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            <!-- File Info Column -->
+            <div class="flex items-start gap-3.5 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-brand-400 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-500 group-hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm font-bold text-white truncate max-w-xl" title="${file.name}">${file.name}</h4>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-indigo-950/80 text-brand-300 border border-indigo-800/50">HTML</span>
+                </div>
+
+                <div class="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                  <span>${file.sizeFormatted}</span>
+                  <span>•</span>
+                  <span>Cập nhật: ${dateStr}</span>
+                </div>
+
+                <!-- Live Direct LAN link display -->
+                <div class="mt-2 flex items-center gap-2">
+                  <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/70 border border-slate-800 text-[11px] font-mono text-slate-300 truncate max-w-md">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span class="truncate">${fullLanUrl}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions Column -->
+            <div class="flex items-center gap-2 self-end md:self-center flex-shrink-0">
+              <!-- Copy Link Button (Primary) -->
+              <button onclick="copyToClipboard('${fullLanUrl}', 'Đã chép link LAN vào clipboard!')" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-600/20 transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Chép link LAN
+              </button>
+
+              <!-- Open in New Tab -->
+              <a href="${file.viewUrl}" target="_blank" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1" title="Mở trang trong tab mới">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Xem
+              </a>
+
+              <!-- Preview in Modal -->
+              <button onclick="openPreviewModal('${file.name}', '${file.viewUrl}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition" title="Xem nhanh trong bảng">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+
+              <!-- QR Code Modal -->
+              <button onclick="openQrModal('${file.name}', '${fullLanUrl}')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition" title="Quét mã QR từ điện thoại">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+              </button>
+
+              <!-- Download Raw File -->
+              <a href="${file.downloadUrl}" download="${file.name}" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition" title="Tải file về máy">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              </a>
+
+              <!-- Delete File -->
+              <button onclick="deleteFile('${file.name}')" class="p-2 rounded-xl hover:bg-red-500/20 text-slate-500 hover:text-red-400 text-xs transition" title="Xóa file">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Load Files from server
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/files');
+        if (res.ok) {
+          currentFiles = await res.json();
+          filterAndRender();
+        }
+      } catch (err) {
+        showToast('Không thể kết nối đến máy chủ: ' + err.message, 'error');
+      }
+    }
+
+    function filterAndRender() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const filtered = q ? currentFiles.filter(f => f.name.toLowerCase().includes(q)) : currentFiles;
+      renderFiles(filtered);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', filterAndRender);
+
+    // Upload Handler (Drag & Drop + Input File)
+    async function uploadFile(file) {
+      const progress = document.getElementById('uploadProgress');
+      const statusText = document.getElementById('uploadStatusText');
+
+      progress.classList.remove('hidden');
+      statusText.textContent = `Đang tải lên "${file.name}"...`;
+
+      try {
+        const res = await fetch(`/api/upload?name=${encodeURIComponent(file.name)}`, {
+          method: 'POST',
+          headers: {
+            'X-File-Name': encodeURIComponent(file.name)
+          },
+          body: file
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          showToast(`Đã upload "${result.name}" thành công!`, 'success');
+          await loadFiles();
+          
+          // Auto copy the LAN link of the uploaded file
+          const fullLanUrl = `${getLanBaseUrl()}/view/${encodeURIComponent(result.name)}`;
+          copyToClipboard(fullLanUrl, `Đã upload & sao chép link LAN: ${result.name}`);
+        } else {
+          const err = await res.json();
+          showToast(`Lỗi upload: ${err.error || 'Thất bại'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Lỗi mạng khi tải lên: ${err.message}`, 'error');
+      } finally {
+        progress.classList.add('hidden');
+      }
+    }
+
+    // Drag and Drop Events
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dropzone-active');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dropzone-active');
+      });
+    });
+
+    dropzone.addEventListener('drop', async (e) => {
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) return;
+      for (const file of files) {
+        await uploadFile(file);
+      }
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      for (const file of files) {
+        await uploadFile(file);
+      }
+      fileInput.value = '';
+    });
+
+    // Delete File Handler
+    async function deleteFile(filename) {
+      if (!confirm(`Bạn có chắc muốn xóa file "${filename}"?`)) return;
+      try {
+        const res = await fetch(`/api/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast(`Đã xóa file "${filename}"`, 'success');
+          loadFiles();
+        } else {
+          showToast('Xóa file không thành công', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi khi xóa file: ' + err.message, 'error');
+      }
+    }
+
+    // QR Code Modal Handlers
+    function openQrModal(filename, url) {
+      currentQrUrl = url;
+      document.getElementById('qrFileName').textContent = filename;
+      document.getElementById('qrLinkText').textContent = url;
+      
+      const wrapper = document.getElementById('qrcodeWrapper');
+      wrapper.innerHTML = '';
+      
+      try {
+        if (typeof QRCode !== 'undefined') {
+          new QRCode(wrapper, {
+            text: url,
+            width: 176,
+            height: 176,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          wrapper.innerHTML = '<span class="text-xs text-slate-500">Mã QR (Link: ' + url + ')</span>';
+        }
+      } catch (e) {
+        wrapper.innerHTML = '<span class="text-xs text-slate-500">' + url + '</span>';
+      }
+
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function copyCurrentQrUrl() {
+      if (currentQrUrl) copyToClipboard(currentQrUrl, 'Đã sao chép link LAN!');
+    }
+
+    // Quick Preview Modal Handlers
+    function openPreviewModal(name, viewUrl) {
+      document.getElementById('previewTitle').textContent = `Xem trước: ${name}`;
+      document.getElementById('previewIframe').src = viewUrl;
+      document.getElementById('previewOpenNewTab').href = viewUrl;
+      document.getElementById('previewModal').classList.remove('hidden');
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewIframe').src = '';
+      document.getElementById('previewModal').classList.add('hidden');
+    }
+
+    function setPreviewSize(width) {
+      document.getElementById('previewIframe').style.maxWidth = width;
+    }
+
+    // Close modals on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeQrModal();
+        closePreviewModal();
+      }
+    });
+
+    // Initial Load
+    (async () => {
+      await loadServerInfo();
+      await loadFiles();
+    })();
+  </script>
+</body>
+</html>
