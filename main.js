@@ -2,33 +2,35 @@ const { app, BrowserWindow, Tray, Menu, shell, clipboard, Notification, nativeIm
 const path = require('path');
 const fs = require('fs');
 
-// 1. Initialize Server in-process
-const { server, PORT, getPrimaryIp, UPLOADS_DIR } = require('./server.js');
+// 1. MUST check single instance lock FIRST before loading anything else
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  // If an instance is already running, exit immediately
+  app.quit();
+  process.exit(0);
+}
+
+// 2. Load Server module only in the primary instance
+const { startServer, PORT, getPrimaryIp, UPLOADS_DIR } = require('./server.js');
 
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 
-// Ensure single instance of desktop app
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  app.quit();
-} else {
-  app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  });
-}
+// When a second instance tries to launch, focus our main window!
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.focus();
+  }
+});
 
 function getAppIcon() {
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
   if (fs.existsSync(iconPath)) {
     return nativeImage.createFromPath(iconPath);
   }
-  // Fallback to empty icon if not yet generated
   return nativeImage.createEmpty();
 }
 
@@ -38,7 +40,7 @@ function createWindow() {
     height: 820,
     minWidth: 850,
     minHeight: 600,
-    backgroundColor: '#020617', // slate-950 dark background to prevent white flash
+    backgroundColor: '#020617', // slate-950 dark background
     autoHideMenuBar: true,
     title: 'HTML Share Hub - LAN Server',
     icon: getAppIcon(),
@@ -55,9 +57,8 @@ function createWindow() {
   // Load the web hub
   mainWindow.loadURL(hubUrl);
 
-  // Open external links in user's default browser instead of electron window
+  // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    // If it's a view link or external link, allow default browser or open tab
     if (url.startsWith('http')) {
       shell.openExternal(url);
       return { action: 'deny' };
@@ -73,7 +74,7 @@ function createWindow() {
       
       if (Notification.isSupported()) {
         new Notification({
-          title: 'HTML Share Hub vẫn đang chạy ngầm',
+          title: 'HTML Share Hub đang chạy ngầm',
           body: `Server LAN đang hoạt động tại http://${lanIp}:${PORT}. Bấm đúp vào biểu tượng khay hệ thống để mở lại.`,
           icon: getAppIcon()
         }).show();
@@ -157,7 +158,10 @@ function createTray() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Start server safely
+  await startServer(PORT);
+  
   createWindow();
   createTray();
 
@@ -173,7 +177,6 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-  // On Windows, keep running in background tray unless isQuitting is true
   if (process.platform !== 'darwin' && isQuitting) {
     app.quit();
   }

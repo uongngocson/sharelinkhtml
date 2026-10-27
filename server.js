@@ -421,21 +421,43 @@ const server = http.createServer(async (req, res) => {
   res.end('Not Found');
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  const ip = getPrimaryIp();
-  console.log(`=======================================================`);
-  console.log(`🚀 HTML & WEB APP SHARE HUB IS RUNNING!`);
-  console.log(`📡 Localhost:     http://localhost:${PORT}`);
-  console.log(`🌐 LAN Network:   http://${ip}:${PORT}`);
-  console.log(`📁 Files Storage: ${UPLOADS_DIR}`);
-  console.log(`=======================================================`);
-});
+function startServer(port = PORT) {
+  return new Promise((resolve) => {
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`⚠️ Port ${port} is already in use by another instance.`);
+        resolve({ inUse: true, port });
+        return;
+      }
+      console.error('Server error:', err);
+      resolve({ error: err, port });
+    });
+
+    server.listen(port, '0.0.0.0', () => {
+      const ip = getPrimaryIp();
+      console.log(`=======================================================`);
+      console.log(`🚀 HTML & WEB APP SHARE HUB IS RUNNING!`);
+      console.log(`📡 Localhost:     http://localhost:${port}`);
+      console.log(`🌐 LAN Network:   http://${ip}:${port}`);
+      console.log(`📁 Files Storage: ${UPLOADS_DIR}`);
+      console.log(`=======================================================`);
+      resolve({ inUse: false, port });
+    });
+  });
+}
+
+// Auto-start only when run directly: `node server.js`
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = {
   server,
+  startServer,
   PORT,
   getPrimaryIp,
   getNetworkIps,
   UPLOADS_DIR
 };
+
 
