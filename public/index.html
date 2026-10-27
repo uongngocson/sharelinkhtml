@@ -262,7 +262,7 @@
   <!-- Minimal Offline QR Code Generator script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
-    let serverInfo = { primaryIp: window.location.hostname, port: window.location.port || '3000' };
+    let serverInfo = { primaryIp: window.location.hostname, port: window.location.port || '8080' };
     let currentFiles = [];
     let currentQrUrl = '';
 
@@ -313,7 +313,7 @@
     // Get Base LAN URL
     function getLanBaseUrl() {
       const ip = serverInfo.primaryIp || window.location.hostname;
-      const port = serverInfo.port || window.location.port || '3000';
+      const port = serverInfo.port || window.location.port || '8080';
       return `http://${ip}:${port}`;
     }
 

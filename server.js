@@ -4,7 +4,7 @@ const path = require('path');
 const os = require('os');
 const { URL } = require('url');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
