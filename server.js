@@ -430,3 +430,12 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📁 Files Storage: ${UPLOADS_DIR}`);
   console.log(`=======================================================`);
 });
+
+module.exports = {
+  server,
+  PORT,
+  getPrimaryIp,
+  getNetworkIps,
+  UPLOADS_DIR
+};
+

@@ -1,0 +1,32 @@
+{
+  "name": "html-share-hub",
+  "version": "1.0.0",
+  "description": "Desktop app to drag & drop HTML wireframes and share live over LAN",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "dist": "electron-builder"
+  },
+  "author": "uongngocson",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^34.5.8"
+  },
+  "build": {
+    "appId": "com.uongngocson.htmlsharehub",
+    "productName": "HTML Share Hub",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "files": [
+      "main.js",
+      "server.js",
+      "public/**/*",
+      "uploads/**/*"
+    ]
+  }
+}
