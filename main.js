@@ -17,21 +17,41 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 
-// When a second instance tries to launch, focus our main window!
+// When a second instance tries to launch, bring window to front or recreate it!
 app.on('second-instance', () => {
-  if (mainWindow) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.setAlwaysOnTop(true);
     mainWindow.focus();
+    mainWindow.setAlwaysOnTop(false);
+  } else {
+    createWindow();
   }
 });
 
 function getAppIcon() {
-  const iconPath = path.join(__dirname, 'assets', 'icon.png');
-  if (fs.existsSync(iconPath)) {
-    return nativeImage.createFromPath(iconPath);
+  const icoPath = path.join(__dirname, 'assets', 'icon.ico');
+  if (fs.existsSync(icoPath)) {
+    return nativeImage.createFromPath(icoPath);
+  }
+  const pngPath = path.join(__dirname, 'assets', 'icon.png');
+  if (fs.existsSync(pngPath)) {
+    return nativeImage.createFromPath(pngPath);
   }
   return nativeImage.createEmpty();
+}
+
+function getTrayIcon() {
+  const icon = getAppIcon();
+  if (!icon.isEmpty()) {
+    try {
+      return icon.resize({ width: 16, height: 16 });
+    } catch (e) {
+      return icon;
+    }
+  }
+  return icon;
 }
 
 function createWindow() {
@@ -44,6 +64,7 @@ function createWindow() {
     autoHideMenuBar: true,
     title: 'HTML Share Hub - LAN Server',
     icon: getAppIcon(),
+    show: false, // show gracefully once ready
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -53,6 +74,20 @@ function createWindow() {
 
   const lanIp = getPrimaryIp();
   const hubUrl = `http://localhost:${PORT}`;
+
+  // Gracefully show window when ready
+  mainWindow.once('ready-to-show', () => {
+    if (mainWindow) mainWindow.show();
+  });
+
+  // Auto-retry if initial load fails
+  mainWindow.webContents.on('did-fail-load', () => {
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadURL(hubUrl);
+      }
+    }, 500);
+  });
 
   // Load the web hub
   mainWindow.loadURL(hubUrl);
@@ -66,18 +101,25 @@ function createWindow() {
     return { action: 'allow' };
   });
 
-  // Minimize to tray on close
+  // Handle close: minimize to tray if tray exists, otherwise quit
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
-      
-      if (Notification.isSupported()) {
-        new Notification({
-          title: 'HTML Share Hub đang chạy ngầm',
-          body: `Server LAN đang hoạt động tại http://${lanIp}:${PORT}. Bấm đúp vào biểu tượng khay hệ thống để mở lại.`,
-          icon: getAppIcon()
-        }).show();
+      if (tray) {
+        event.preventDefault();
+        mainWindow.hide();
+        
+        try {
+          if (Notification.isSupported()) {
+            new Notification({
+              title: 'HTML Share Hub đang chạy ngầm',
+              body: `Server LAN đang hoạt động tại http://${lanIp}:${PORT}. Bấm đúp vào biểu tượng khay hệ thống để mở lại.`,
+              icon: getAppIcon()
+            }).show();
+          }
+        } catch (e) {}
+      } else {
+        // If tray is not available, allow quitting so no invisible orphan process remains
+        isQuitting = true;
       }
     }
   });
@@ -88,74 +130,83 @@ function createWindow() {
 }
 
 function createTray() {
-  const lanIp = getPrimaryIp();
-  const lanUrl = `http://${lanIp}:${PORT}`;
+  try {
+    const lanIp = getPrimaryIp();
+    const lanUrl = `http://${lanIp}:${PORT}`;
+    const icon = getTrayIcon();
 
-  tray = new Tray(getAppIcon());
-  tray.setToolTip(`HTML Share Hub - Đang hoạt động (${lanUrl})`);
+    tray = new Tray(icon);
+    tray.setToolTip(`HTML Share Hub - Đang hoạt động (${lanUrl})`);
 
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: '🌐 Mở Giao Diện Dashboard',
-      click: () => {
-        if (mainWindow) {
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: '🌐 Mở Giao Diện Dashboard',
+        click: () => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+          } else {
+            createWindow();
+          }
+        }
+      },
+      {
+        label: `📋 Sao Chép Link LAN (${lanIp}:${PORT})`,
+        click: () => {
+          clipboard.writeText(lanUrl);
+          try {
+            if (Notification.isSupported()) {
+              new Notification({
+                title: 'Đã sao chép link LAN!',
+                body: lanUrl
+              }).show();
+            }
+          } catch (e) {}
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '📁 Mở Thư Mục File Đã Lưu',
+        click: () => {
+          shell.openPath(UPLOADS_DIR);
+        }
+      },
+      {
+        label: '🔄 Tải Lại Trang (Reload)',
+        click: () => {
+          if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload();
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '❌ Thoát Ứng Dụng Hoàn Toàn',
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        }
+      }
+    ]);
+
+    tray.setContextMenu(contextMenu);
+
+    // Double click tray icon to toggle window
+    tray.on('double-click', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isVisible()) {
+          mainWindow.hide();
+        } else {
           mainWindow.show();
           mainWindow.focus();
-        } else {
-          createWindow();
         }
-      }
-    },
-    {
-      label: `📋 Sao Chép Link LAN (${lanIp}:${PORT})`,
-      click: () => {
-        clipboard.writeText(lanUrl);
-        if (Notification.isSupported()) {
-          new Notification({
-            title: 'Đã sao chép link LAN!',
-            body: lanUrl
-          }).show();
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: '📁 Mở Thư Mục File Đã Lưu',
-      click: () => {
-        shell.openPath(UPLOADS_DIR);
-      }
-    },
-    {
-      label: '🔄 Tải Lại Trang (Reload)',
-      click: () => {
-        if (mainWindow) mainWindow.reload();
-      }
-    },
-    { type: 'separator' },
-    {
-      label: '❌ Thoát Ứng Dụng Hoàn Toàn',
-      click: () => {
-        isQuitting = true;
-        app.quit();
-      }
-    }
-  ]);
-
-  tray.setContextMenu(contextMenu);
-
-  // Double click tray icon to toggle window
-  tray.on('double-click', () => {
-    if (mainWindow) {
-      if (mainWindow.isVisible()) {
-        mainWindow.hide();
       } else {
-        mainWindow.show();
-        mainWindow.focus();
+        createWindow();
       }
-    } else {
-      createWindow();
-    }
-  });
+    });
+  } catch (err) {
+    console.warn('⚠️ Tray creation skipped or failed:', err.message);
+    tray = null;
+  }
 }
 
 app.whenReady().then(async () => {

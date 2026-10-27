@@ -5,12 +5,41 @@ const os = require('os');
 const { URL } = require('url');
 
 const PORT = process.env.PORT || 8080;
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+// Resolve writable uploads directory (handle packaged Electron app.asar)
+let electronApp = null;
+try {
+  electronApp = require('electron').app;
+} catch (e) {}
+
+const isPackaged = electronApp && electronApp.isPackaged;
+const UPLOADS_DIR = isPackaged
+  ? path.join(electronApp.getPath('userData'), 'uploads')
+  : (process.env.UPLOADS_DIR || path.join(__dirname, 'uploads'));
+
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Ensure directories exist
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+if (!fs.existsSync(PUBLIC_DIR) && !isPackaged) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+
+// In packaged app, seed initial files from bundled uploads to writable UPLOADS_DIR
+if (isPackaged) {
+  const bundledUploads = path.join(__dirname, 'uploads');
+  try {
+    if (fs.existsSync(bundledUploads)) {
+      const items = fs.readdirSync(bundledUploads);
+      for (const item of items) {
+        const dest = path.join(UPLOADS_DIR, item);
+        if (!fs.existsSync(dest)) {
+          fs.cpSync(path.join(bundledUploads, item), dest, { recursive: true });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ Seeding bundled uploads failed:', e.message);
+  }
+}
 
 // 1. Auto import wireframe from Downloads if exists
 const defaultDownloadFile = 'C:\\Users\\PC\\Downloads\\TBChat-CloudDrive-Moderation-Wireframe (1).html';
@@ -158,23 +187,55 @@ const server = http.createServer(async (req, res) => {
   const pathname = decodeURIComponent(reqUrl.pathname);
 
   // 0. API: Download Desktop App (.exe) for other LAN users
-  if (req.method === 'GET' && (pathname === '/api/download-app' || pathname === '/download-app')) {
-    const distElectronDir = path.join(__dirname, 'dist-electron');
-    let targetExe = path.join(distElectronDir, 'HTML-Share-Hub-Setup.exe');
+  if ((req.method === 'GET' || req.method === 'HEAD') && (pathname === '/api/download-app' || pathname === '/download-app')) {
+    const candidatePaths = [
+      path.join(__dirname, 'dist-electron', 'HTML-Share-Hub-Setup.exe'),
+      'C:\\Task4-paid-channel\\html-hub\\dist-electron\\HTML-Share-Hub-Setup.exe',
+      'C:\\Users\\PC\\Downloads\\HTML-Share-Hub-Setup.exe',
+      process.resourcesPath ? path.join(process.resourcesPath, 'HTML-Share-Hub-Setup.exe') : null,
+      electronApp ? path.join(electronApp.getPath('userData'), 'HTML-Share-Hub-Setup.exe') : null
+    ].filter(Boolean);
 
-    if (!fs.existsSync(targetExe) && fs.existsSync(distElectronDir)) {
-      const files = fs.readdirSync(distElectronDir);
-      const foundExe = files.find(f => f.endsWith('.exe') && !f.includes('elevate'));
-      if (foundExe) targetExe = path.join(distElectronDir, foundExe);
+    let targetExe = null;
+    for (const cand of candidatePaths) {
+      if (fs.existsSync(cand)) {
+        try {
+          const s = fs.statSync(cand);
+          if (s.isFile() && s.size > 5 * 1024 * 1024) { // Valid installer must be > 5MB
+            targetExe = cand;
+            break;
+          }
+        } catch (e) {}
+      }
     }
 
-    if (fs.existsSync(targetExe)) {
+    if (!targetExe) {
+      // Try scanning dist-electron folder if exists
+      const distElectronDir = path.join(__dirname, 'dist-electron');
+      if (fs.existsSync(distElectronDir)) {
+        try {
+          const files = fs.readdirSync(distElectronDir);
+          const found = files.find(f => f.endsWith('.exe') && !f.includes('elevate'));
+          if (found) {
+            const p = path.join(distElectronDir, found);
+            if (fs.statSync(p).size > 5 * 1024 * 1024) targetExe = p;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (targetExe && fs.existsSync(targetExe)) {
       const stat = fs.statSync(targetExe);
       res.writeHead(200, {
         'Content-Type': 'application/vnd.microsoft.portable-executable',
         'Content-Disposition': 'attachment; filename="HTML-Share-Hub-Setup.exe"',
-        'Content-Length': stat.size
+        'Content-Length': stat.size,
+        'Cache-Control': 'no-cache'
       });
+      if (req.method === 'HEAD') {
+        res.end();
+        return;
+      }
       fs.createReadStream(targetExe).pipe(res);
       return;
     } else {
