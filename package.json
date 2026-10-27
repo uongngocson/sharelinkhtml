@@ -6,12 +6,14 @@
   "scripts": {
     "start": "electron .",
     "server": "node server.js",
-    "dist": "electron-builder"
+    "dist": "electron-builder --win nsis",
+    "dist:portable": "electron-builder --win portable"
   },
   "author": "uongngocson",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^34.5.8"
+    "electron": "^34.5.8",
+    "electron-builder": "^26.18.0"
   },
   "build": {
     "appId": "com.uongngocson.htmlsharehub",
@@ -20,13 +22,29 @@
       "output": "dist-electron"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "HTML Share Hub",
+      "artifactName": "HTML-Share-Hub-Setup.${ext}"
     },
     "files": [
       "main.js",
       "server.js",
       "public/**/*",
-      "uploads/**/*"
+      "uploads/**/*",
+      "assets/**/*"
     ]
   }
 }

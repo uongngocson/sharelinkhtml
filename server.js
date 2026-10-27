@@ -157,6 +157,33 @@ const server = http.createServer(async (req, res) => {
   const reqUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = decodeURIComponent(reqUrl.pathname);
 
+  // 0. API: Download Desktop App (.exe) for other LAN users
+  if (req.method === 'GET' && (pathname === '/api/download-app' || pathname === '/download-app')) {
+    const distElectronDir = path.join(__dirname, 'dist-electron');
+    let targetExe = path.join(distElectronDir, 'HTML-Share-Hub-Setup.exe');
+
+    if (!fs.existsSync(targetExe) && fs.existsSync(distElectronDir)) {
+      const files = fs.readdirSync(distElectronDir);
+      const foundExe = files.find(f => f.endsWith('.exe') && !f.includes('elevate'));
+      if (foundExe) targetExe = path.join(distElectronDir, foundExe);
+    }
+
+    if (fs.existsSync(targetExe)) {
+      const stat = fs.statSync(targetExe);
+      res.writeHead(200, {
+        'Content-Type': 'application/vnd.microsoft.portable-executable',
+        'Content-Disposition': 'attachment; filename="HTML-Share-Hub-Setup.exe"',
+        'Content-Length': stat.size
+      });
+      fs.createReadStream(targetExe).pipe(res);
+      return;
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(render404('Bản cài đặt Desktop .exe đang được đóng gói, vui lòng thử lại sau ít phút!'));
+      return;
+    }
+  }
+
   // 1. API: Server Info & Network IP
   if (req.method === 'GET' && pathname === '/api/info') {
     const primaryIp = getPrimaryIp();
