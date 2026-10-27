@@ -105,13 +105,12 @@
     <!-- Main Content Area -->
     <main class="mt-8 space-y-8">
       
-      <!-- Drag & Drop Upload Zone (Supports both Files & Folders) -->
+      <!-- Drag & Drop Upload Zone (HTML Files Only) -->
       <section>
-        <div id="dropzone" class="relative group border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-900/60 hover:bg-slate-900/90 rounded-3xl p-8 md:p-12 text-center transition-all duration-200 backdrop-blur">
+        <div id="dropzone" class="relative group border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-900/60 hover:bg-slate-900/90 rounded-3xl p-8 md:p-12 text-center transition-all duration-200 backdrop-blur cursor-pointer" onclick="if(event.target.closest('button')===null)document.getElementById('fileInput').click()">
           
-          <!-- Hidden inputs for single file and folder selection -->
+          <!-- Hidden input for HTML files selection -->
           <input type="file" id="fileInput" accept=".html,.htm" multiple class="hidden">
-          <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
           
           <div class="flex flex-col items-center justify-center">
             <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-brand-400 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white transition duration-200 shadow-md">
@@ -121,29 +120,18 @@
             </div>
             
             <h2 class="text-xl font-bold text-white mb-1.5">
-              Kéo & thả <span class="text-brand-400">File HTML</span> hoặc <span class="text-purple-400">Cả Thư Mục (dist / build)</span> vào đây
+              Kéo & thả file <span class="text-brand-400 font-mono">.html</span> vào đây
             </h2>
-            <p class="text-sm text-slate-400 max-w-lg mb-5">
-              Hỗ trợ kéo thả nguyên thư mục web (kèm đầy đủ CSS, JS, hình ảnh, fonts). Tự động chạy file <code class="text-indigo-300 font-mono">index.html</code> bên trong và cấp link LAN trực tiếp.
+            <p class="text-sm text-slate-400 max-w-md mb-5">
+              Hệ thống sẽ tự động tải lên và cấp link trực tiếp cho đồng nghiệp trong cùng mạng LAN xem ngay lập tức
             </p>
 
-            <div class="flex flex-wrap items-center justify-center gap-3">
-              <!-- Upload Single File Button -->
-              <button onclick="document.getElementById('fileInput').click()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-600/30 transition">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Chọn File HTML lẻ
-              </button>
-
-              <!-- Upload Entire Folder Button -->
-              <button onclick="document.getElementById('folderInput').click()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-600/30 transition">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                Chọn Cả Thư Mục (Folder)
-              </button>
-            </div>
+            <button type="button" onclick="event.stopPropagation();document.getElementById('fileInput').click()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-600/30 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Chọn file HTML từ máy tính
+            </button>
           </div>
 
           <!-- Uploading Overlay Spinner & Progress -->
@@ -530,29 +518,10 @@
       copyToClipboard(rootUrl, `Đã cấp link LAN: ${firstRoot}`);
     }
 
-    // Traverse Folder Entries from Drag & Drop
-    async function traverseEntry(entry, path = '') {
-      const files = [];
-      if (entry.isFile) {
-        const file = await new Promise((resolve) => entry.file(resolve));
-        files.push({ file, relPath: (path ? path + '/' : '') + entry.name });
-      } else if (entry.isDirectory) {
-        const reader = entry.createReader();
-        const entries = await new Promise((resolve) => {
-          reader.readEntries((results) => resolve(results));
-        });
-        for (const subEntry of entries) {
-          const subFiles = await traverseEntry(subEntry, (path ? path + '/' : '') + entry.name);
-          files.push(...subFiles);
-        }
-      }
-      return files;
-    }
 
-    // Drag and Drop Events
+      // Drag and Drop Events (HTML Files Only)
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
-    const folderInput = document.getElementById('folderInput');
 
     ['dragenter', 'dragover'].forEach(name => {
       dropzone.addEventListener(name, (e) => {
@@ -571,45 +540,24 @@
     });
 
     dropzone.addEventListener('drop', async (e) => {
-      const items = e.dataTransfer.items;
-      const uploadList = [];
+      const allFiles = Array.from(e.dataTransfer.files);
+      const htmlFiles = allFiles.filter(f => /\.html?$/i.test(f.name));
 
-      if (items && items.length > 0) {
-        for (let i = 0; i < items.length; i++) {
-          const entry = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : null;
-          if (entry) {
-            const entryFiles = await traverseEntry(entry);
-            uploadList.push(...entryFiles);
-          } else {
-            const file = items[i].getAsFile();
-            if (file) uploadList.push({ file, relPath: file.name });
-          }
-        }
-      } else {
-        const files = Array.from(e.dataTransfer.files);
-        for (const file of files) {
-          uploadList.push({ file, relPath: file.name });
-        }
+      if (htmlFiles.length === 0) {
+        showToast('Vui lòng chỉ kéo thả file có đuôi .html hoặc .htm!', 'error');
+        return;
       }
 
+      const uploadList = htmlFiles.map(file => ({ file, relPath: file.name }));
       await uploadBatch(uploadList);
     });
 
     fileInput.addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files).filter(f => /\.html?$/i.test(f.name));
+      if (files.length === 0) return;
       const uploadList = files.map(file => ({ file, relPath: file.name }));
       await uploadBatch(uploadList);
       fileInput.value = '';
-    });
-
-    folderInput.addEventListener('change', async (e) => {
-      const files = Array.from(e.target.files);
-      const uploadList = files.map(file => ({
-        file,
-        relPath: file.webkitRelativePath || file.name
-      }));
-      await uploadBatch(uploadList);
-      folderInput.value = '';
     });
 
     // Delete Item Handler
