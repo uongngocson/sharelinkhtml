@@ -245,6 +245,25 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+const ALIASES_FILE = path.join(UPLOADS_DIR, '.aliases.json');
+
+function getAliases() {
+  try {
+    if (fs.existsSync(ALIASES_FILE)) {
+      return JSON.parse(fs.readFileSync(ALIASES_FILE, 'utf8') || '{}');
+    }
+  } catch (e) {}
+  return {};
+}
+
+function saveAlias(oldName, newName) {
+  try {
+    const aliases = getAliases();
+    aliases[oldName] = newName;
+    fs.writeFileSync(ALIASES_FILE, JSON.stringify(aliases, null, 2), 'utf8');
+  } catch (e) {}
+}
+
   // 1. API: Server Info & Network IP
   if (req.method === 'GET' && pathname === '/api/info') {
     const primaryIp = getPrimaryIp();
@@ -267,6 +286,7 @@ const server = http.createServer(async (req, res) => {
       const list = [];
 
       for (const entry of entries) {
+        if (entry.name.startsWith('.')) continue; // ignore hidden files/metadata
         const fullPath = path.join(UPLOADS_DIR, entry.name);
         try {
           if (entry.isDirectory()) {
@@ -313,8 +333,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 3. API: Upload File or Folder items (Supports both single file & nested folder upload)
+  // 3. API: Upload File or Folder items (Supports target overwrite to keep identical link)
   if (req.method === 'POST' && pathname === '/api/upload') {
+    // Check if target file was specified to overwrite (keeps existing URL!)
+    let targetOverride = reqUrl.searchParams.get('target') || req.headers['x-target-name'];
+    if (targetOverride) {
+      try { targetOverride = decodeURIComponent(targetOverride); } catch (e) {}
+    }
+
     // Check if relative path was supplied (e.g. from folder upload "dist/assets/styles.css")
     let rawPath = req.headers['x-file-path'] || req.headers['x-file-name'] || reqUrl.searchParams.get('path') || reqUrl.searchParams.get('name') || `file_${Date.now()}.html`;
     try {
@@ -322,7 +348,35 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {}
 
     // Normalize path to prevent directory traversal
-    const safeRelPath = rawPath.replace(/\\/g, '/').split('/').filter(p => p && p !== '..').join('/');
+    let safeRelPath = rawPath.replace(/\\/g, '/').split('/').filter(p => p && p !== '..').join('/');
+
+    let isExplicitUpdate = false;
+    let autoNormalizedFrom = null;
+
+    if (targetOverride) {
+      const safeTarget = path.basename(targetOverride);
+      safeRelPath = safeTarget;
+      isExplicitUpdate = true;
+    } else {
+      // Auto-detect browser duplicate download pattern: "name (1).html", "name (2).html", "name - Copy.html"
+      const match = safeRelPath.match(/^(.*?)(\s*\(\d+\)|\s*-\s*copy)(\.html?)$/i);
+      if (match) {
+        const candidateBase = match[1].trim() + match[3];
+        const candidatePath = path.join(UPLOADS_DIR, candidateBase);
+        if (fs.existsSync(candidatePath)) {
+          autoNormalizedFrom = safeRelPath;
+          safeRelPath = candidateBase;
+          isExplicitUpdate = true;
+          console.log(`🔄 Auto-updating existing base file "${candidateBase}" from "${autoNormalizedFrom}" (URL preserved)`);
+        }
+      } else {
+        const existingPath = path.join(UPLOADS_DIR, safeRelPath);
+        if (fs.existsSync(existingPath)) {
+          isExplicitUpdate = true;
+        }
+      }
+    }
+
     const targetPath = path.join(UPLOADS_DIR, safeRelPath);
 
     // Prevent escaping UPLOADS_DIR
@@ -355,9 +409,12 @@ const server = http.createServer(async (req, res) => {
           relPath: safeRelPath,
           rootName: rootItemName,
           isFolderItem: isFolderItem,
+          isUpdated: isExplicitUpdate,
+          autoNormalizedFrom: autoNormalizedFrom,
           size: stat.size,
           sizeFormatted: formatBytes(stat.size),
-          viewUrl: isFolderItem ? `/view/${encodeURIComponent(rootItemName)}/` : `/view/${encodeURIComponent(rootItemName)}`
+          viewUrl: isFolderItem ? `/view/${encodeURIComponent(rootItemName)}/` : `/view/${encodeURIComponent(rootItemName)}`,
+          message: isExplicitUpdate ? `Đã cập nhật nội dung cho "${rootItemName}" (Link LAN giữ nguyên 100%)` : `Đã tải lên "${rootItemName}"`
         }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -372,7 +429,64 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4. API: Delete File or Project Folder
+  // 4a. API: Rename File or Project (Custom URL / Permanent Slug)
+  if (req.method === 'POST' && pathname === '/api/rename') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      try {
+        const { oldName, newName } = JSON.parse(body || '{}');
+        if (!oldName || !newName) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'oldName và newName là bắt buộc' }));
+          return;
+        }
+
+        const safeOld = path.basename(oldName);
+        let safeNew = path.basename(newName).trim();
+
+        if (safeOld.toLowerCase().endsWith('.html') && !safeNew.toLowerCase().endsWith('.html') && !safeNew.toLowerCase().endsWith('.htm')) {
+          safeNew += '.html';
+        }
+
+        const oldPath = path.join(UPLOADS_DIR, safeOld);
+        const newPath = path.join(UPLOADS_DIR, safeNew);
+
+        if (!fs.existsSync(oldPath)) {
+          res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'Mục cần đổi tên không tồn tại' }));
+          return;
+        }
+
+        if (fs.existsSync(newPath) && safeOld !== safeNew) {
+          res.writeHead(409, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: `Tên hoặc link "${safeNew}" đã tồn tại. Vui lòng chọn tên khác!` }));
+          return;
+        }
+
+        if (safeOld !== safeNew) {
+          await fs.promises.rename(oldPath, newPath);
+          saveAlias(safeOld, safeNew);
+        }
+
+        const isDir = fs.statSync(newPath).isDirectory();
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          success: true,
+          oldName: safeOld,
+          newName: safeNew,
+          viewUrl: isDir ? `/view/${encodeURIComponent(safeNew)}/` : `/view/${encodeURIComponent(safeNew)}`,
+          message: `Đã đổi tên thành "${safeNew}". Link cũ vẫn tự động chuyển tiếp!`
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // 4b. API: Delete File or Project Folder
   if (req.method === 'DELETE' && pathname.startsWith('/api/files/')) {
     const rawName = pathname.replace('/api/files/', '');
     const safeName = path.basename(decodeURIComponent(rawName));
@@ -405,6 +519,17 @@ const server = http.createServer(async (req, res) => {
     // Sanitize subpath: prevent ".." traversal
     const safeSubpath = subpath.replace(/\\/g, '/').split('/').filter(p => p !== '..').join('/');
     let targetPath = path.join(UPLOADS_DIR, safeSubpath);
+
+    // If file doesn't exist, check aliases mapping
+    if (!fs.existsSync(targetPath)) {
+      const aliases = getAliases();
+      const firstPart = safeSubpath.split('/')[0];
+      if (aliases[firstPart]) {
+        const mappedTarget = aliases[firstPart];
+        const remainder = safeSubpath.split('/').slice(1).join('/');
+        targetPath = path.join(UPLOADS_DIR, remainder ? path.join(mappedTarget, remainder) : mappedTarget);
+      }
+    }
 
     // Security check
     if (!targetPath.startsWith(UPLOADS_DIR)) {
@@ -445,7 +570,10 @@ const server = http.createServer(async (req, res) => {
       'Content-Type': contentType,
       'Access-Control-Allow-Origin': '*',
       'Content-Security-Policy': "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;",
-      'X-Frame-Options': 'SAMEORIGIN'
+      'X-Frame-Options': 'SAMEORIGIN',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     });
     fs.createReadStream(targetPath).pipe(res);
     return;

@@ -182,6 +182,25 @@
           </div>
         </div>
 
+        <!-- Permanent Link Feature Guide Banner -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-indigo-950/40 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </span>
+            <div>
+              <span class="font-bold text-white">Cơ chế Giữ Nguyên Link (URL Cố Định):</span>
+              <span class="text-slate-300 ml-1">Khi tải file HTML mới lên hoặc bấm <b class="text-emerald-400 font-semibold">"Cập nhật file"</b>, nội dung sẽ được cập nhật mới nhưng <b class="text-emerald-400 font-semibold">đường link LAN đã gửi đồng nghiệp luôn giữ nguyên 100%</b>!</span>
+            </div>
+          </div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 whitespace-nowrap self-start sm:self-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Auto URL Preserve
+          </span>
+        </div>
+
         <!-- Files List Grid -->
         <div id="fileListContainer" class="grid grid-cols-1 gap-3.5">
           <!-- Populated dynamically -->
@@ -249,6 +268,53 @@
     </div>
     <div class="flex-1 mt-3 flex items-center justify-center overflow-hidden">
       <iframe id="previewIframe" src="" class="w-full h-full bg-white rounded-2xl shadow-2xl border border-slate-800 transition-all duration-300"></iframe>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Targeted Item Update -->
+  <input type="file" id="updateItemFileInput" accept=".html,.htm" class="hidden">
+
+  <!-- Rename / Custom Permanent URL Modal -->
+  <div id="renameModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-bold text-white">Đổi Tên / Đặt Link Cố Định</h3>
+        </div>
+        <button onclick="closeRenameModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div>
+        <div class="text-[11px] text-slate-400 mb-1 flex items-center justify-between">
+          <span>Tên hiện tại:</span>
+          <span id="renameCurrentName" class="font-mono text-slate-300 truncate max-w-xs">...</span>
+        </div>
+        <label class="block text-xs font-semibold text-slate-300 mt-2 mb-1">Tên hoặc đường dẫn mới:</label>
+        <input type="text" id="renameInput" placeholder="nhap-ten-moi.html" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-brand-500 text-white font-mono text-sm focus:outline-none transition">
+      </div>
+
+      <div class="p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+        <span class="text-[11px] font-semibold text-slate-400 block mb-1 uppercase tracking-wider">Đường link LAN sau khi đổi:</span>
+        <span id="renamePreviewUrl" class="text-xs font-mono text-emerald-400 break-all">...</span>
+        <div class="flex items-start gap-1.5 mt-2 text-[11px] text-slate-400">
+          <svg class="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Hệ thống sẽ tự động lưu chuyển tiếp: các link cũ đã gửi đồng nghiệp trước đây vẫn hoạt động bình thường!</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button onclick="closeRenameModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">Hủy</button>
+        <button onclick="submitRename()" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-600/30 transition">Lưu Thay Đổi</button>
+      </div>
     </div>
   </div>
 
@@ -357,10 +423,25 @@
           hour: '2-digit',
           minute: '2-digit'
         });
+        const encName = encodeURIComponent(item.name);
 
         return `
-          <div class="group bg-slate-900/75 hover:bg-slate-900 border ${isProject ? 'border-purple-800/50 hover:border-purple-700/80' : 'border-slate-800 hover:border-slate-700/80'} rounded-2xl p-4 transition-all duration-150 backdrop-blur shadow-sm hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div id="card-${encName}" 
+               ondragover="onCardDragOver(event, '${encName}')" 
+               ondragleave="onCardDragLeave(event, '${encName}')" 
+               ondrop="onCardDrop(event, '${encName}')"
+               class="group relative bg-slate-900/75 hover:bg-slate-900 border ${isProject ? 'border-purple-800/50 hover:border-purple-700/80' : 'border-slate-800 hover:border-slate-700/80'} rounded-2xl p-4 transition-all duration-150 backdrop-blur shadow-sm hover:shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
             
+            <!-- Card Drag-over Target Overlay -->
+            <div id="card-overlay-${encName}" class="hidden absolute inset-0 bg-slate-950/95 border-2 border-dashed border-emerald-400 rounded-2xl z-20 flex items-center justify-center p-4 pointer-events-none">
+              <span class="text-xs font-bold text-emerald-300 flex items-center gap-2 bg-emerald-950/80 px-4 py-2 rounded-xl border border-emerald-500/50 shadow-xl">
+                <svg class="w-4 h-4 text-emerald-400 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Thả file HTML vào đây để cập nhật vào link này (Link LAN giữ nguyên 100%)!
+              </span>
+            </div>
+
             <!-- Info Column -->
             <div class="flex items-start gap-3.5 min-w-0">
               <div class="w-11 h-11 rounded-xl ${isProject ? 'bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-600' : 'bg-indigo-500/10 border border-indigo-500/20 text-brand-400 group-hover:bg-brand-500'} group-hover:text-white flex items-center justify-center flex-shrink-0 transition">
@@ -376,7 +457,7 @@
               </div>
 
               <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                   <h4 class="text-sm font-bold text-white truncate max-w-xl" title="${item.name}">${item.name}</h4>
                   
                   ${isProject ? `
@@ -388,6 +469,10 @@
                       HTML
                     </span>
                   `}
+
+                  <span class="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20" title="Link này là cố định và không thay đổi khi cập nhật file">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Link Cố Định
+                  </span>
                 </div>
 
                 <div class="flex items-center gap-3 text-xs text-slate-400 mt-1">
@@ -413,7 +498,26 @@
             </div>
 
             <!-- Actions Column -->
-            <div class="flex items-center gap-2 self-end md:self-center flex-shrink-0">
+            <div class="flex items-center gap-2 self-end md:self-center flex-shrink-0 flex-wrap">
+              <!-- Update / Overwrite File Button (Preserves exact URL) -->
+              <button onclick="triggerUpdateFile('${item.name}')" 
+                      title="Cập nhật file HTML mới cho mục này (Giữ nguyên 100% link LAN đã gửi đồng nghiệp)" 
+                      class="px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-semibold shadow-sm transition flex items-center gap-1.5 group/btn">
+                <svg class="w-3.5 h-3.5 text-emerald-400 group-hover/btn:text-white group-hover/btn:rotate-180 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Cập nhật file</span>
+              </button>
+
+              <!-- Rename / Custom Slug Button -->
+              <button onclick="openRenameModal('${item.name}')" 
+                      title="Đổi tên file hoặc đổi đường link URL cố định" 
+                      class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+
               <!-- Copy Link Button (Primary) -->
               <button onclick="copyToClipboard('${fullLanUrl}', 'Đã chép link LAN vào clipboard!')" class="px-3 py-1.5 rounded-xl ${isProject ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20' : 'bg-brand-600 hover:bg-brand-500 shadow-brand-600/20'} text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -458,6 +562,151 @@
       }).join('');
     }
 
+    // Targeted Update & Rename State
+    let targetUpdateItemName = null;
+    let targetRenameItemName = null;
+
+    function triggerUpdateFile(itemName) {
+      targetUpdateItemName = itemName;
+      const input = document.getElementById('updateItemFileInput');
+      input.value = '';
+      input.click();
+    }
+
+    document.getElementById('updateItemFileInput').addEventListener('change', async (e) => {
+      if (!targetUpdateItemName || !e.target.files.length) return;
+      const file = e.target.files[0];
+      if (!/\.html?$/i.test(file.name)) {
+        showToast('Vui lòng chỉ chọn file .html hoặc .htm!', 'error');
+        return;
+      }
+      await uploadFileToTarget(file, targetUpdateItemName);
+      targetUpdateItemName = null;
+      e.target.value = '';
+    });
+
+    async function uploadFileToTarget(file, targetName) {
+      const progress = document.getElementById('uploadProgress');
+      const statusText = document.getElementById('uploadStatusText');
+      const subStatusText = document.getElementById('uploadSubStatusText');
+      const progressBar = document.getElementById('uploadProgressBar');
+
+      progress.classList.remove('hidden');
+      statusText.textContent = `Đang cập nhật nội dung cho "${targetName}"...`;
+      subStatusText.textContent = `Link LAN được giữ nguyên 100%`;
+      progressBar.style.width = '60%';
+
+      try {
+        const res = await fetch(`/api/upload?target=${encodeURIComponent(targetName)}`, {
+          method: 'POST',
+          headers: {
+            'X-Target-Name': encodeURIComponent(targetName)
+          },
+          body: file
+        });
+        const data = await res.json();
+        progressBar.style.width = '100%';
+        if (data.success) {
+          showToast(`✅ Đã cập nhật file mới cho "${targetName}"! Link LAN giữ nguyên!`, 'success');
+        } else {
+          showToast('Cập nhật thất bại: ' + (data.error || 'Lỗi không xác định'), 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi khi tải file: ' + err.message, 'error');
+      } finally {
+        setTimeout(() => {
+          progress.classList.add('hidden');
+          progressBar.style.width = '0%';
+        }, 400);
+        await loadFiles();
+      }
+    }
+
+    // Card Drag and Drop Handlers
+    function onCardDragOver(e, encodedName) {
+      e.preventDefault();
+      e.stopPropagation();
+      const overlay = document.getElementById(`card-overlay-${encodedName}`);
+      if (overlay) overlay.classList.remove('hidden');
+    }
+
+    function onCardDragLeave(e, encodedName) {
+      e.preventDefault();
+      e.stopPropagation();
+      const overlay = document.getElementById(`card-overlay-${encodedName}`);
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    async function onCardDrop(e, encodedName) {
+      e.preventDefault();
+      e.stopPropagation();
+      const overlay = document.getElementById(`card-overlay-${encodedName}`);
+      if (overlay) overlay.classList.add('hidden');
+
+      const targetName = decodeURIComponent(encodedName);
+      const allFiles = Array.from(e.dataTransfer.files);
+      const htmlFiles = allFiles.filter(f => /\.html?$/i.test(f.name));
+
+      if (htmlFiles.length === 0) {
+        showToast('Vui lòng chỉ thả file .html hoặc .htm!', 'error');
+        return;
+      }
+
+      await uploadFileToTarget(htmlFiles[0], targetName);
+    }
+
+    // Rename / Custom URL Modal Handlers
+    function openRenameModal(name) {
+      targetRenameItemName = name;
+      document.getElementById('renameCurrentName').textContent = name;
+      document.getElementById('renameInput').value = name;
+      updateRenamePreview();
+      document.getElementById('renameModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('renameInput').focus(), 50);
+    }
+
+    function closeRenameModal() {
+      document.getElementById('renameModal').classList.add('hidden');
+      targetRenameItemName = null;
+    }
+
+    function updateRenamePreview() {
+      let val = document.getElementById('renameInput').value.trim();
+      if (!val) val = targetRenameItemName || 'ten-file.html';
+      if (!/\.html?$/i.test(val)) val += '.html';
+      const lanBase = getLanBaseUrl();
+      document.getElementById('renamePreviewUrl').textContent = `${lanBase}/view/${encodeURIComponent(val)}`;
+    }
+
+    document.getElementById('renameInput').addEventListener('input', updateRenamePreview);
+
+    async function submitRename() {
+      if (!targetRenameItemName) return;
+      const newName = document.getElementById('renameInput').value.trim();
+      if (!newName) {
+        showToast('Vui lòng nhập tên mới!', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/rename', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldName: targetRenameItemName, newName })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Đã đổi tên thành "${data.newName}"! Link cũ vẫn tự động chuyển tiếp.`, 'success');
+          closeRenameModal();
+          await loadFiles();
+        } else {
+          showToast(data.error || 'Đổi tên thất bại', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi khi đổi tên: ' + err.message, 'error');
+      }
+    }
+
     // Load Items from server
     async function loadFiles() {
       try {
@@ -499,13 +748,17 @@
         progressBar.style.width = `${Math.round(((completed) / total) * 100)}%`;
 
         try {
-          await fetch(`/api/upload?path=${encodeURIComponent(relPath)}`, {
+          const res = await fetch(`/api/upload?path=${encodeURIComponent(relPath)}`, {
             method: 'POST',
             headers: {
               'X-File-Path': encodeURIComponent(relPath)
             },
             body: item.file
           });
+          const data = await res.json();
+          if (data && data.isUpdated) {
+            showToast(data.message || `🔄 Đã cập nhật vào link "${data.rootName}" (Link LAN giữ nguyên)!`, 'success');
+          }
         } catch (e) {
           console.error('Upload failed for:', relPath, e);
         }
@@ -525,7 +778,6 @@
         : `${getLanBaseUrl()}/view/${encodeURIComponent(firstRoot)}`;
       copyToClipboard(rootUrl, `Đã cấp link LAN: ${firstRoot}`);
     }
-
 
       // Drag and Drop Events (HTML Files Only)
     const dropzone = document.getElementById('dropzone');
@@ -644,6 +896,7 @@
       if (e.key === 'Escape') {
         closeQrModal();
         closePreviewModal();
+        closeRenameModal();
       }
     });
 

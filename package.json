@@ -1,6 +1,6 @@
 {
   "name": "html-share-hub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop app to drag & drop HTML wireframes and share live over LAN",
   "main": "main.js",
   "scripts": {
